@@ -1,11 +1,15 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import { DateTime } from 'luxon';
-import { db, initialize, familyData } from './lib/db.mjs';
+import { db as defaultDb, initialize, familyData as loadFamilyData } from './lib/db.mjs';
 import { zone, token, digest, passwordHash, passwordMatches, validateEvent, occurrences, calendarFeed } from './lib/calendar.mjs';
+import { familyCode, familyName, createFamily, requestJoin, reviewJoin } from './lib/families.mjs';
 
-await initialize();
+export async function createApplication(db=defaultDb) {
+await initialize(db);
+const familyData=id=>loadFamilyData(id,db);
 if (!process.env.APP_URL) throw new Error('APP_URL must be configured.');
 const origin = new URL(process.env.APP_URL).origin;
 const secure = process.env.COOKIE_SECURE !== 'false';
@@ -39,7 +43,8 @@ async function login(res, member) {
   await db.query('INSERT INTO sessions VALUES ($1,$2,now()+interval \'14 days\')', [digest(session),member.id]);
   send(res,200,{ok:true},{'Set-Cookie':cookieHeader(session)});
 }
-const files = new Map([['/',['public/index.html','text/html']],['/app.js',['public/app.js','text/javascript']],['/style.css',['public/style.css','text/css']]]);
+const files = new Map([['/',['public/index.html','text/html']],['/app.js',['public/app.js','text/javascript']],['/style.css',['public/style.css','text/css']],['/email-header.png',['public/email-header.png','image/png']]]);
+files.set('/families.css',['public/families.css','text/css']);
 const server = http.createServer(async (req,res) => {
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','no-referrer');
@@ -63,7 +68,26 @@ const server = http.createServer(async (req,res) => {
     }
     if (!path.startsWith('/api/')) return send(res,404,{error:'Not found.'});
     if (req.method !== 'GET' && (req.headers.origin !== origin || !String(req.headers['content-type'] || '').startsWith('application/json'))) return send(res,403,{error:'Request origin did not match APP_URL. Open the configured application address.'});
-    if (req.method === 'GET' && path === '/api/status') return send(res,200,{setupRequired:!(await db.query('SELECT 1 FROM families LIMIT 1')).rowCount});
+    if (req.method === 'GET' && path === '/api/status') return send(res,200,{setupRequired:!(await db.query("SELECT 1 FROM members WHERE kind='adult' LIMIT 1")).rowCount});
+    if (req.method === 'POST' && path === '/api/register') {
+      rateLimit('register:' + req.socket.remoteAddress);
+      const input=await body(req);
+      if(typeof input.name!=='string' || !input.name.trim() || input.name.length>80 || !emailValid(input.email) || typeof input.password!=='string' || input.password.length<12 || input.password.length>128) throw new Error('Enter a name, valid email, and password of 12–128 characters.');
+      const client=await db.connect();
+      let id;
+      try {
+        await client.query('BEGIN');
+        await client.query('SELECT pg_advisory_xact_lock(724111)');
+        if(!(await client.query("SELECT 1 FROM members WHERE kind='adult' LIMIT 1")).rowCount) {
+          const expected=process.env.SETUP_TOKEN || '';
+          if(expected.length<24 || typeof input.token!=='string' || digest(input.token)!==digest(expected)) throw new Error('The first account requires the server setup token.');
+        }
+        id=randomUUID();
+        await client.query("INSERT INTO members (id,name,kind,email,password_hash) VALUES ($1,$2,'adult',$3,$4)",[id,input.name.trim(),input.email.trim().toLowerCase(),passwordHash(input.password)]);
+        await client.query('COMMIT');
+      } catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+      return login(res,{id});
+    }
     if (req.method === 'POST' && path === '/api/setup') {
       rateLimit('setup');
       const input = await body(req);
@@ -77,7 +101,7 @@ const server = http.createServer(async (req,res) => {
         await client.query('SELECT pg_advisory_xact_lock(724111)');
         if ((await client.query('SELECT 1 FROM families LIMIT 1')).rowCount) {await client.query('ROLLBACK'); return send(res,409,{error:'Setup is already complete.'});}
         const familyId = randomUUID();
-        await client.query('INSERT INTO families VALUES ($1,$2,$3)',[familyId,'Our family',digest(token())]);
+        await client.query('INSERT INTO families (id,name,feed_token,join_code) VALUES ($1,$2,$3,$4)',[familyId,'Our family',digest(token()),familyCode()]);
         let first;
         for (const [i,a] of input.adults.entries()) {
           const id = randomUUID(); first ||= id;
@@ -103,11 +127,46 @@ const server = http.createServer(async (req,res) => {
       return send(res,200,{ok:true},{'Set-Cookie':cookieHeader('',0)});
     }
     if (req.method==='GET' && path==='/api/data') {
+      if(!account.family_id) {
+        const pending=!!(await db.query('SELECT 1 FROM join_requests WHERE member_id=$1',[account.id])).rowCount;
+        return send(res,200,{needsFamily:true,pending,account:{id:account.id,name:account.name}});
+      }
       const data=await familyData(account.family_id);
+      const family=(await db.query('SELECT id,name,join_code FROM families WHERE id=$1',[account.family_id])).rows[0];
+      const requests=(await db.query('SELECT m.id,m.name,m.email,r.created_at FROM join_requests r JOIN members m ON m.id=r.member_id WHERE r.family_id=$1 ORDER BY r.created_at',[account.family_id])).rows;
       const from=DateTime.fromISO(url.searchParams.get('from') || DateTime.now().toISODate(),{zone}).startOf('day');
       const to=DateTime.fromISO(url.searchParams.get('to') || from.plus({days:42}).toISODate(),{zone}).startOf('day');
       if (!from.isValid || !to.isValid || to<=from || to.diff(from,'days').days>370) throw new Error('Choose a date range of up to one year.');
-      return send(res,200,{members:data.members,events:data.events.flatMap(e=>occurrences(e,from,to)).sort((a,b)=>a.start.localeCompare(b.start)),account:{id:account.id,name:account.name},zone,mailMode:process.env.MAIL_MODE || 'preview'});
+      return send(res,200,{family,requests,members:data.members,events:data.events.flatMap(e=>occurrences(e,from,to)).sort((a,b)=>a.start.localeCompare(b.start)),account:{id:account.id,name:account.name},zone,mailMode:process.env.MAIL_MODE || 'preview'});
+    }
+    if(req.method==='POST' && path==='/api/family/create') {
+      const input=await body(req); await createFamily(db,account.id,input.name); return send(res,201,{ok:true});
+    }
+    if(req.method==='POST' && path==='/api/family/join') {
+      rateLimit('join:'+account.id);rateLimit('join-ip:'+req.socket.remoteAddress);
+      const input=await body(req); await requestJoin(db,account.id,input.code); return send(res,200,{ok:true});
+    }
+    if(req.method==='POST' && path==='/api/family/cancel') {
+      await db.query('DELETE FROM join_requests WHERE member_id=$1',[account.id]);return send(res,200,{ok:true});
+    }
+    // All remaining APIs require approved adult membership. Pending applicants cannot read calendar, members, email, or settings.
+    if(!account.family_id || account.kind!=='adult') return send(res,403,{error:'Join or create a family first. Joining requires adult approval.'});
+    if(req.method==='POST' && path==='/api/family/name') {
+      const input=await body(req);await db.query('UPDATE families SET name=$1 WHERE id=$2',[familyName(input.name),account.family_id]);return send(res,200,{ok:true});
+    }
+    if(req.method==='POST' && path==='/api/family/code') {
+      await db.query('UPDATE families SET join_code=$1 WHERE id=$2',[familyCode(),account.family_id]);return send(res,200,{ok:true});
+    }
+    if(req.method==='POST' && path==='/api/family/review') {
+      const input=await body(req);if(!uuid(input.id) || typeof input.approve!=='boolean') throw new Error('Choose a valid request.');
+      await reviewJoin(db,account.id,input.id,input.approve);return send(res,200,{ok:true});
+    }
+    if(req.method==='GET' && path.startsWith('/api/mail/preview/')) {
+      const id=decodeURIComponent(path.slice('/api/mail/preview/'.length));
+      const job=(await db.query('SELECT html FROM mail_jobs WHERE id=$1 AND family_id=$2',[id,account.family_id])).rows[0];
+      if(!job?.html) return send(res,404,{error:'Styled preview not available for this message.'});
+      res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'"});
+      return res.end(job.html.replaceAll('cid:family-header','/email-header.png'));
     }
     if(req.method==='POST' && path==='/api/members') {
       const input=await body(req);
@@ -140,7 +199,7 @@ const server = http.createServer(async (req,res) => {
       return send(res,200,{url:`${origin}/calendar/${value}.ics`});
     }
     if(req.method==='GET' && path==='/api/mail') {
-      const result=await db.query('SELECT id,recipient,subject,body,status,due_at,sent_at,attempts,last_error FROM mail_jobs WHERE family_id=$1 ORDER BY due_at DESC LIMIT 40',[account.family_id]);
+      const result=await db.query('SELECT id,recipient,subject,body,status,due_at,sent_at,attempts,last_error,(html IS NOT NULL) AS styled FROM mail_jobs WHERE family_id=$1 ORDER BY due_at DESC LIMIT 40',[account.family_id]);
       return send(res,200,{jobs:result.rows});
     }
     return send(res,404,{error:'Not found.'});
@@ -150,4 +209,9 @@ const server = http.createServer(async (req,res) => {
   }
 });
 server.requestTimeout=15000;
-server.listen(3000,'0.0.0.0',()=>console.log('Family Calendar listening on port 3000'));
+return server;
+}
+if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href) {
+  const server=await createApplication();
+  server.listen(3000,'0.0.0.0',()=>console.log('Family Calendar listening on port 3000'));
+}

@@ -1,10 +1,12 @@
 # Our family calendar — private proof of concept
 
-Phone-friendly shared calendar for two parents and child profiles. Run on Worleyserver using Docker Compose and Tailscale. Nothing is published to a hosted service by this project.
+Phone-friendly shared calendars for adult accounts and child profiles. Run on Worleyserver using Docker Compose and private home-network/Tailscale access. Nothing is published to a hosted service by this project.
 
 ## Included
 
-- One family, two parent logins created together during one-time setup.
+- Create an adult account, then create a named family or request to join using a family code.
+- Joining requires approval from an existing adult. Every approved adult has full access to that family's calendar, profiles, name, codes, and requests. Each account currently belongs to one family.
+- Pending applicants cannot read family data. Families have isolated events, members, requests, subscriptions, and email history.
 - Child profiles without logins; tag multiple people and filter events by member.
 - Agenda and month views, detailed events, Apple Maps directions links.
 - One-time, daily, and weekly events with optional repeat end dates. Editing/deleting affects the entire series.
@@ -12,6 +14,7 @@ Phone-friendly shared calendar for two parents and child profiles. Run on Worley
 - Reminder options: off, 15 minutes, 30 minutes, 1 hour, or 1 day before.
 - Sunday 3 p.m. America/Chicago weekly email covering the following Monday–Sunday.
 - Preview mode saves email content inside Family & settings; SMTP mode sends through SMTP2GO.
+- Styled HTML reminders/digests include an illustrated header, family name, details, calendar/maps buttons, and a plain-text fallback. Subject example: `Worley Family – Soccer practice in 15 minutes`.
 - Revocable private read-only ICS feed, including all-day events. Expanded occurrences cover one month back and twelve months ahead.
 
 ## Run on Worleyserver
@@ -41,7 +44,7 @@ Requires Docker Engine, the Docker Compose plugin, and Tailscale. Copy this enti
    docker compose up -d
    ```
 
-7. With Tailscale connected, open that URL from your phone. Enter the setup token and create both parent accounts. After setup, remove the setup token from `.env` and run `docker compose up -d` again. Existing accounts remain valid.
+7. With Tailscale connected, open that URL from your phone. Create the first adult account using the setup token, then create and name your family. Share the family code from Family & settings with your spouse. They create their own account and request to join; approve them in Family & settings. After the first account is created, remove the setup token from `.env` and run `docker compose up -d` again. Existing accounts remain valid.
 8. Add child profiles in **Family & settings**. Create an event roughly 17 minutes from now with a 15-minute reminder. Within about one minute of its due time, inspect **View recent email activity** for the preview.
 
 If port 3080 is already used, change its host-side mapping in `compose.yaml` and the Tailscale target. The database is not exposed on a host port. Keep Tailscale access rules limited to the intended devices/users.
@@ -89,7 +92,7 @@ pnpm test
 pnpm audit --prod
 ```
 
-For an HTTP localhost test only, use `APP_URL=http://localhost:3080` and `COOKIE_SECURE=false`. Restore secure cookies for Tailscale HTTPS. The application uses hashed passwords, hashed session tokens, same-origin request checks, family-scoped queries, and login throttling. There is no public signup or password-recovery email flow yet. Keep this proof of concept private.
+For an HTTP localhost test only, use `APP_URL=http://localhost:3080` and `COOKIE_SECURE=false`. For home-network access, also set `BIND_ADDRESS` to the server's private LAN IP and set `APP_URL` to that address with port 3080. Restore secure cookies for HTTPS. The application uses hashed passwords, hashed session tokens, same-origin request checks, family-scoped queries, and registration/login/join throttling. Registration is now available to anyone who can reach the application; email verification and password recovery are not implemented. Keep this proof of concept private.
 
 ## Reliability and limits
 
@@ -98,7 +101,7 @@ For an HTTP localhost test only, use `APP_URL=http://localhost:3080` and `COOKIE
 - A crash after SMTP accepts a message but before the database marks it sent can cause a duplicate. SMTP does not provide an exactly-once guarantee.
 - Changes cancel pending reminders for the old version. An email already accepted by SMTP cannot be recalled. Weekly digests are snapshots at the time they are queued.
 - All-day events use an exclusive end date and midnight local time as the reminder reference. For a one-day all-day event, select the same date for start and end; the form advances the end to the following day.
-- Time zone, digest time, and reminder defaults are fixed for this initial build. No per-occurrence edits, private events, cross-family features, monthly recurrence, native push/SMS, or two-way calendar sync yet.
+- Time zone, digest time, and reminder defaults are fixed for this initial build. No per-occurrence edits, private events, cross-family sharing, monthly recurrence, native push/SMS, or two-way calendar sync yet. Separate family spaces are supported.
 - AI wording is deferred; the digest currently uses an exact formatted agenda. A wall-display view is also deferred.
 - Browser rendering, Docker startup, real PostgreSQL integration, Apple subscription behavior, and actual SMTP delivery must be verified on the target server before relying on the application.
 
@@ -119,4 +122,4 @@ docker compose ps
 docker compose logs --tail=100 app worker
 ```
 
-The worker retains email activity for 90 days. The initial application does not provide self-service password resets, account removal, or child-profile editing; those are follow-up work.
+The worker retains email activity for 90 days. The initial application does not provide self-service password resets, account removal, or child-profile editing; those are follow-up work. See [UPGRADE.md](UPGRADE.md) for the family-registration and styled-email upgrade.

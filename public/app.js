@@ -1,6 +1,6 @@
 const $=selector=>document.querySelector(selector);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let state={members:[],events:[]},selected=null,view='agenda',anchor=new Date(),noticeTimer;
+let state={members:[],events:[]},selected=null,view='agenda',anchor=new Date(),noticeTimer,registrationSetup=false;
 const zone='America/Chicago';
 function notify(message){$('#notice').textContent=message;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('#notice').textContent='',7000);}
 async function api(path,body){const res=await fetch('/api/'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const data=await res.json();if(!res.ok){if(res.status===401 && path!=='login')showAuth(false);throw new Error(data.error||'Something went wrong.');}return data;}
@@ -10,10 +10,11 @@ function localInput(value){const d=new Date(value);const parts=new Intl.DateTime
 function dayAdd(date,n){const d=new Date(date);d.setDate(d.getDate()+n);return d;}
 function clock(value){return new Date(value).toLocaleTimeString('en-US',{timeZone:zone,hour:'numeric',minute:'2-digit'});}
 function tone(member){return 'tone-'+Math.max(0,['#487968','#9a642f','#6c62a4','#287f99','#b15770'].indexOf(member.color));}
-function showAuth(setup){$('#app').hidden=true;$('#auth').hidden=false;$('#setup-form').hidden=!setup;$('#login-form').hidden=setup;if(setup)$('#adult-fields').innerHTML=[0,1].map(i=>`<h3>${i?'Second':'First'} parent</h3><label>Name<input name="name${i}" required maxlength="80" autocomplete="name"></label><label>Email<input name="email${i}" type="email" required autocomplete="username"></label><label>Password<input name="password${i}" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></label>`).join('');}
+function showAuth(setup){registrationSetup=setup;$('#app').hidden=true;$('#onboarding').hidden=true;$('#auth').hidden=false;$('#setup-form').hidden=true;$('#login-form').hidden=setup;$('#register-form').hidden=!setup;$('#register-token').hidden=!setup;$('#register-form').elements.token.required=setup;}
 function range(){if(view==='month'){const start=new Date(anchor.getFullYear(),anchor.getMonth(),1,12);return {from:dayAdd(start,-start.getDay()),to:dayAdd(start,42)};}const start=new Date(anchor.getFullYear(),anchor.getMonth(),anchor.getDate(),12);return {from:start,to:dayAdd(start,28)};}
-async function load(){const {from,to}=range();state=await api(`data?from=${isoDay(from)}&to=${isoDay(to)}`);$('#auth').hidden=true;$('#app').hidden=false;render();}
+async function load(){const {from,to}=range();state=await api(`data?from=${isoDay(from)}&to=${isoDay(to)}`);$('#auth').hidden=true;$('#onboarding').hidden=!state.needsFamily;$('#app').hidden=!!state.needsFamily;if(state.needsFamily){$('#pending-panel').hidden=!state.pending;$('#family-choices').hidden=state.pending;return;}if(selected&&!state.members.some(m=>m.id===selected))selected=null;render();}
 function render(){
+  $('#family-brand').textContent=state.family.name;
   $('#today').textContent=new Date().toLocaleDateString('en-US',{timeZone:zone,weekday:'long',month:'long',day:'numeric'});
   $('#period').textContent=anchor.toLocaleDateString('en-US',{month:'long',year:'numeric'});
   $('#agenda-view').setAttribute('aria-pressed',view==='agenda');$('#month-view').setAttribute('aria-pressed',view==='month');
@@ -38,6 +39,14 @@ function openEvent(id){
   $('#event-dialog').showModal();
 }
 $('#login-form').addEventListener('submit',guarded(async e=>{e.preventDefault();await api('login',Object.fromEntries(new FormData(e.target)));await load();}));
+$('#show-register').onclick=()=>{$('#login-form').hidden=true;$('#register-form').hidden=false;};
+$('#show-login').onclick=()=>{$('#register-form').hidden=true;$('#login-form').hidden=false;};
+$('#register-form').addEventListener('submit',guarded(async e=>{e.preventDefault();await api('register',Object.fromEntries(new FormData(e.target)));e.target.reset();await load();}));
+$('#create-family-form').addEventListener('submit',guarded(async e=>{e.preventDefault();await api('family/create',Object.fromEntries(new FormData(e.target)));await load();notify('Family created. Your invitation code is in Family & settings.');}));
+$('#join-family-form').addEventListener('submit',guarded(async e=>{e.preventDefault();await api('family/join',Object.fromEntries(new FormData(e.target)));await load();}));
+$('#check-approval').onclick=guarded(load);
+$('#cancel-request').onclick=guarded(async()=>{await api('family/cancel',{});await load();});
+$('#onboarding-logout').onclick=guarded(async()=>{await api('logout',{});showAuth(false);});
 $('#setup-form').addEventListener('submit',guarded(async e=>{e.preventDefault();const f=new FormData(e.target);await api('setup',{token:f.get('token'),adults:[0,1].map(i=>({name:f.get('name'+i),email:f.get('email'+i),password:f.get('password'+i)}))});e.target.reset();await load();}));
 $('#logout').onclick=guarded(async()=>{await api('logout',{});showAuth(false);});
 $('#add-event').onclick=()=>openEvent();
@@ -52,9 +61,12 @@ $('#event-form').addEventListener('submit',guarded(async e=>{
 $('#delete-event').onclick=guarded(async()=>{if(!confirm('Delete this event? For a repeating event, this deletes the entire series.'))return;const f=$('#event-form');await api('events/delete',{id:f.elements.id.value,version:Number(f.elements.version.value)});$('#event-dialog').close();await load();notify('Event deleted.');});
 $('#agenda-view').onclick=guarded(async()=>{view='agenda';await load();});$('#month-view').onclick=guarded(async()=>{view='month';await load();});
 $('#prev').onclick=guarded(async()=>{anchor=view==='month'?new Date(anchor.getFullYear(),anchor.getMonth()-1,1,12):dayAdd(anchor,-28);await load();});$('#next').onclick=guarded(async()=>{anchor=view==='month'?new Date(anchor.getFullYear(),anchor.getMonth()+1,1,12):dayAdd(anchor,28);await load();});$('#now').onclick=guarded(async()=>{anchor=new Date();await load();});
-function renderFamily(){$('#family-list').innerHTML=state.members.map(m=>`<div class="family-row"><span class="dot ${tone(m)}"></span><strong>${esc(m.name)}</strong><small>${m.kind==='child'?'Child · no login':esc(m.email)}</small></div>`).join('');$('#mail-mode').textContent=state.mailMode==='preview'?'Preview mode: messages are saved here instead of being sent.':'SMTP mode: messages are sent through your configured provider.';}
-$('#settings-button').onclick=()=>{renderFamily();$('#settings-dialog').showModal();};
+function renderFamily(){$('#family-name-form').elements.name.value=state.family.name;$('#family-code').value=state.family.join_code;$('#join-requests').innerHTML=state.requests.length?'<h3>Requests to join</h3>'+state.requests.map(r=>`<div class="request-row"><p><strong>${esc(r.name)}</strong><br><span class="muted">${esc(r.email)}</span></p><button data-request="${r.id}" data-approve="true">Approve</button><button class="quiet" data-request="${r.id}" data-approve="false">Decline</button></div>`).join(''):'<p class="muted small">No pending requests.</p>';$('#family-list').innerHTML=state.members.map(m=>`<div class="family-row"><span class="dot ${tone(m)}"></span><strong>${esc(m.name)}</strong><small>${m.kind==='child'?'Child · no login':esc(m.email)}</small></div>`).join('');$('#mail-mode').textContent=state.mailMode==='preview'?'Preview mode: messages are saved here instead of being sent.':'SMTP mode: messages are sent through your configured provider.';}
+$('#settings-button').onclick=guarded(async()=>{await load();renderFamily();$('#settings-dialog').showModal();});
+$('#family-name-form').addEventListener('submit',guarded(async e=>{e.preventDefault();await api('family/name',Object.fromEntries(new FormData(e.target)));await load();renderFamily();notify('Family name saved. New emails will use this name.');}));
+$('#rotate-code').onclick=guarded(async()=>{if(!confirm('Replace the family code? The old code will stop accepting new requests. Existing pending requests still require approval.'))return;await api('family/code',{});await load();renderFamily();});
+$('#join-requests').onclick=guarded(async e=>{const target=e.target.closest('[data-request]');if(!target)return;const approve=target.dataset.approve==='true';if(approve&&!confirm('Approve this adult? They will have full access to your family calendar and settings.'))return;await api('family/review',{id:target.dataset.request,approve});await load();renderFamily();notify(approve?'Adult approved.':'Request declined.');});
 $('#child-form').addEventListener('submit',guarded(async e=>{e.preventDefault();await api('members',Object.fromEntries(new FormData(e.target)));e.target.reset();await load();renderFamily();notify('Child profile added.');}));
 $('#feed-button').onclick=guarded(async()=>{if(!confirm('Create a subscription link? This disables any previous link.'))return;const result=await api('feed',{});$('#feed-url').value=result.url;$('#feed-result').hidden=false;$('#feed-url').select();});
-$('#mail-button').onclick=guarded(async()=>{const {jobs}=await api('mail');$('#mail-list').innerHTML=jobs.length?jobs.map(j=>`<details class="mail-item"><summary>${esc(j.subject)} · ${esc(j.status)}</summary><p>${esc(j.recipient)} · ${esc(new Date(j.due_at).toLocaleString('en-US',{timeZone:zone}))}</p><pre>${esc(j.body)}</pre>${j.last_error?`<p>${esc(j.last_error)}</p>`:''}</details>`).join(''):'<p class="muted">No email activity yet. Create an event with a reminder to get started.</p>';});
+$('#mail-button').onclick=guarded(async()=>{const {jobs}=await api('mail');$('#mail-list').innerHTML=jobs.length?jobs.map(j=>`<details class="mail-item"><summary>${esc(j.subject)} · ${esc(j.status)}</summary><p>${esc(j.recipient)} · ${esc(new Date(j.due_at).toLocaleString('en-US',{timeZone:zone}))}</p>${j.styled?`<p><a class="map-link" href="/api/mail/preview/${encodeURIComponent(j.id)}" target="_blank" rel="noopener">Open styled email preview ↗</a></p>`:''}<pre>${esc(j.body)}</pre>${j.last_error?`<p>${esc(j.last_error)}</p>`:''}</details>`).join(''):'<p class="muted">No email activity yet. Create an event with a reminder to get started.</p>';});
 try{const status=await api('status');if(status.setupRequired)showAuth(true);else await load();}catch(error){notify(error.message);}

@@ -16,3 +16,13 @@ CREATE TABLE IF NOT EXISTS mail_jobs (
   next_attempt timestamptz NOT NULL DEFAULT now(), sent_at timestamptz, last_error text
 );
 CREATE INDEX IF NOT EXISTS jobs_due ON mail_jobs(status,due_at,next_attempt);
+-- Additive, repeatable migration: existing member/event IDs and sessions stay intact.
+ALTER TABLE members ALTER COLUMN family_id DROP NOT NULL;
+ALTER TABLE families ADD COLUMN IF NOT EXISTS join_code text;
+CREATE UNIQUE INDEX IF NOT EXISTS families_join_code ON families(join_code);
+CREATE TABLE IF NOT EXISTS join_requests (
+  member_id uuid PRIMARY KEY REFERENCES members(id),
+  family_id uuid NOT NULL REFERENCES families(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE mail_jobs ADD COLUMN IF NOT EXISTS html text;

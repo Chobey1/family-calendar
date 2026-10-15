@@ -17,8 +17,15 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.23.1
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.5.10
+        version: 0.5.10
 
 packages:
+
+  '@electric-sql/pglite@0.5.10':
+    resolution: {integrity: sha512-tXc/25U3ulOkiRQuTFdwIv+JhBqtMdAF7Gvo6CfZZWtSB4+hgC4Wr2vwK5ngvvN5PJfAAEGIsfyCVy1JhCOBYw==}
 
   luxon@3.7.2:
     resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
@@ -87,6 +94,8 @@ packages:
     engines: {node: '>=0.4'}
 
 snapshots:
+
+  '@electric-sql/pglite@0.5.10': {}
 
   luxon@3.7.2: {}
 
