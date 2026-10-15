@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: family_calendar
+      POSTGRES_USER: calendar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - calendar_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U calendar -d family_calendar]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://calendar:${POSTGRES_PASSWORD}@db:5432/family_calendar
+    ports:
+      - '${BIND_ADDRESS:-127.0.0.1}:3080:3000'
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  worker:
+    build: .
+    restart: unless-stopped
+    command: [node, worker.mjs]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://calendar:${POSTGRES_PASSWORD}@db:5432/family_calendar
+    depends_on:
+      app:
+        condition: service_healthy
+volumes:
+  calendar_data:
