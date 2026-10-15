@@ -1,5 +1,12 @@
 const $=selector=>document.querySelector(selector);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Keep scrolling in an explicitly bounded inner panel rather than on the modal.
+for (const dialog of document.querySelectorAll('dialog')) {
+  const panel=document.createElement('div');
+  panel.className='dialog-scroll';
+  panel.append(...dialog.childNodes);
+  dialog.append(panel);
+}
 let state={members:[],events:[]},selected=null,view='agenda',anchor=new Date(),noticeTimer,registrationSetup=false;
 const zone='America/Chicago';
 function notify(message){$('#notice').textContent=message;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('#notice').textContent='',7000);}
