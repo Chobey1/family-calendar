@@ -17,10 +17,11 @@ function localInput(value){const d=new Date(value);const parts=new Intl.DateTime
 function dayAdd(date,n){const d=new Date(date);d.setDate(d.getDate()+n);return d;}
 function clock(value){return new Date(value).toLocaleTimeString('en-US',{timeZone:zone,hour:'numeric',minute:'2-digit'});}
 function tone(member){return 'tone-'+Math.max(0,['#487968','#9a642f','#6c62a4','#287f99','#b15770'].indexOf(member.color));}
-function showAuth(setup){registrationSetup=setup;$('#app').hidden=true;$('#onboarding').hidden=true;$('#auth').hidden=false;$('#setup-form').hidden=true;$('#login-form').hidden=setup;$('#register-form').hidden=!setup;$('#register-token').hidden=!setup;$('#register-form').elements.token.required=setup;}
+function showAuth(setup){document.title='Family Calendar';registrationSetup=setup;$('#app').hidden=true;$('#onboarding').hidden=true;$('#auth').hidden=false;$('#setup-form').hidden=true;$('#login-form').hidden=setup;$('#register-form').hidden=!setup;$('#register-token').hidden=!setup;$('#register-form').elements.token.required=setup;}
 function range(){if(view==='month'){const start=new Date(anchor.getFullYear(),anchor.getMonth(),1,12);return {from:dayAdd(start,-start.getDay()),to:dayAdd(start,42)};}const start=new Date(anchor.getFullYear(),anchor.getMonth(),anchor.getDate(),12);return {from:start,to:dayAdd(start,28)};}
 async function load(){const {from,to}=range();state=await api(`data?from=${isoDay(from)}&to=${isoDay(to)}`);$('#auth').hidden=true;$('#onboarding').hidden=!state.needsFamily;$('#app').hidden=!!state.needsFamily;if(state.needsFamily){$('#pending-panel').hidden=!state.pending;$('#family-choices').hidden=state.pending;return;}if(selected&&!state.members.some(m=>m.id===selected))selected=null;render();}
 function render(){
+  document.title=`${state.family.name} Calendar`;
   $('#family-brand').textContent=state.family.name;
   $('#today').textContent=new Date().toLocaleDateString('en-US',{timeZone:zone,weekday:'long',month:'long',day:'numeric'});
   $('#period').textContent=anchor.toLocaleDateString('en-US',{month:'long',year:'numeric'});
