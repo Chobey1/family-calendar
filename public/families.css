@@ -18,3 +18,9 @@ dialog {
 @media (max-width: 700px) {
   .dialog-scroll { padding: 20px; }
 }
+.date-time-field { min-width: 0; }
+.date-time-field legend { margin-bottom: 9px; }
+.date-time-field label { font-weight: 400; color: var(--muted); font-size: 12px; }
+.series-notice { padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: #e8ede5; line-height: 1.6; font-size: 13px; }
+[data-theme="hearth"] .series-notice { background: #e9e4cc; }
+.series-edit { padding: 4px 9px; min-height: 32px; font-size: 12px; text-decoration: underline; }

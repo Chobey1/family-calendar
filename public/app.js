@@ -1,3 +1,4 @@
+import { configureTimeFields } from './time-fields.js';
 const $=selector=>document.querySelector(selector);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Keep scrolling in an explicitly bounded inner panel rather than on the modal.
@@ -8,6 +9,11 @@ for (const dialog of document.querySelectorAll('dialog')) {
   dialog.append(panel);
 }
 let state={members:[],events:[]},selected=null,view='agenda',anchor=new Date(),noticeTimer,registrationSetup=false;
+const syncTimeFields = configureTimeFields($('#event-form'));
+const seriesNotice = document.createElement('p');
+seriesNotice.className = 'series-notice';
+seriesNotice.hidden = true;
+$('#event-form .dialog-heading').after(seriesNotice);
 const zone='America/Chicago';
 function notify(message){$('#notice').textContent=message;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('#notice').textContent='',7000);}
 async function api(path,body){const res=await fetch('/api/'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const data=await res.json();if(!res.ok){if(res.status===401 && path!=='login')showAuth(false);throw new Error(data.error||'Something went wrong.');}return data;}
@@ -34,16 +40,34 @@ function render(){
   }else{
     const {from}=range();$('#calendar').innerHTML=`<div class="month-grid">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="weekday">${d}</div>`).join('')}${Array.from({length:42},(_,i)=>{const day=dayAdd(from,i),key=isoDay(day);return `<div class="month-cell ${day.getMonth()!==anchor.getMonth()?'outside':''} ${key===isoDay(new Date())?'today':''}"><div class="day-number">${day.getDate()}</div>${events.filter(e=>isoDay(new Date(e.start))===key).map(e=>`<button class="month-event" data-edit="${e.id}">${esc(e.data.allDay?'':clock(e.start)+' ')}${esc(e.data.title)}</button>`).join('')}</div>`;}).join('')}</div>`;
   }
+  for (const card of $('#calendar').querySelectorAll('.event-card')) {
+    const id = card.querySelector('[data-edit]').dataset.edit;
+    const event = state.events.find(item => item.id === id);
+    if (event.data.repeat !== 'none') {
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'quiet series-edit';
+      edit.dataset.edit = id;
+      edit.textContent = 'Edit series';
+      card.querySelector('.tags').append(edit);
+    }
+  }
   $('#footer').textContent=`All times shown in ${zone}. ${state.mailMode==='preview'?'Email preview mode is on — no emails are sent.':'Email delivery is enabled.'}`;
 }
 function card(event){const d=event.data;return `<article class="event-card"><div class="event-time">${d.allDay?'All day':esc(clock(event.start))+'<br>'+esc(clock(event.end))}</div><div><button class="event-title" data-edit="${event.id}">${esc(d.title)}</button>${d.location||d.address?`<p class="event-detail">${esc([d.location,d.address].filter(Boolean).join(' · '))}</p>`:''}${d.notes?`<p class="event-detail">${esc(d.notes)}</p>`:''}${d.directions?`<p class="event-detail">${esc(d.directions)}</p>`:''}<div class="tags">${state.members.filter(m=>d.members.includes(m.id)).map(m=>`<span class="tag"><span class="dot ${tone(m)}"></span>${esc(m.name)}</span>`).join('')}${d.repeat!=='none'?'<span class="tag">Repeats '+esc(d.repeat)+'</span>':''}</div></div>${d.address?`<a class="map-link" href="https://maps.apple.com/?q=${encodeURIComponent(d.address)}" target="_blank" rel="noreferrer">Directions ↗</a>`:''}</article>`;}
 function openEvent(id){
   const form=$('#event-form');form.reset();const event=state.events.find(e=>e.id===id);
-  $('#event-heading').textContent=event?'Edit this plan':'A new plan';$('#delete-event').hidden=!event;
+  const series = !!event && event.data.repeat !== 'none';
+  $('#event-heading').textContent=series?'Edit repeating series':event?'Edit this plan':'A new plan';$('#delete-event').hidden=!event;
+  $('#delete-event').textContent=series?'Delete series':'Delete event';
+  form.querySelector('[type="submit"]').textContent=series?'Save series':'Save event';
+  seriesNotice.hidden=!series;
+  seriesNotice.textContent='Changes apply to the entire series, including past and future occurrences. The dates below belong to the first event in the series.';
   $('#event-members').innerHTML=state.members.map(m=>`<label><input type="checkbox" name="members" value="${m.id}" ${event?.data.members.includes(m.id)||(!event&&m.id===state.account.id)?'checked':''}>${esc(m.name)}</label>`).join('');
   form.elements.id.value=event?.id||'';form.elements.version.value=event?.version||'';
   if(event){for(const name of ['title','location','address','notes','directions','repeat','until','reminder'])form.elements[name].value=event.data[name]??'';form.elements.start.value=localInput(event.data.start);form.elements.end.value=localInput(event.data.end);form.elements.allDay.checked=event.data.allDay;}
   else{const start=new Date();start.setMinutes(0,0,0);start.setHours(start.getHours()+1);form.elements.start.value=localInput(start);form.elements.end.value=localInput(new Date(+start+3600000));form.elements.reminder.value='60';}
+  syncTimeFields();
   $('#event-dialog').showModal();
 }
 $('#event-form').elements.start.addEventListener('change', event => {
@@ -51,6 +75,7 @@ $('#event-form').elements.start.addEventListener('change', event => {
   const start = event.currentTarget.valueAsNumber;
   if (Number.isFinite(start)) {
     $('#event-form').elements.end.value = new Date(start + 60 * 60 * 1000).toISOString().slice(0, 16);
+    syncTimeFields();
   }
 });
 $('#login-form').addEventListener('submit',guarded(async e=>{e.preventDefault();await api('login',Object.fromEntries(new FormData(e.target)));await load();}));

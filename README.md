@@ -10,6 +10,8 @@ Phone-friendly shared calendars for adult accounts and child profiles. Run on Wo
 - Child profiles without logins; tag multiple people and filter events by member.
 - Agenda and month views, detailed events, Apple Maps directions links.
 - One-time, daily, and weekly events with optional repeat end dates. Editing/deleting affects the entire series.
+- Start/end time dropdowns use quarter-hour choices. Changing the start defaults the end to one hour later, including date rollover. Existing off-quarter times remain available until changed.
+- Repeating events have an **Edit series** shortcut, with explicit **Save series** and **Delete series** controls. The first event's dates are shown; changes affect the whole series, including past occurrences.
 - Both parents receive reminders for child events; adult-only events notify tagged adults.
 - Reminder options: off, 15 minutes, 30 minutes, 1 hour, or 1 day before.
 - Sunday 3 p.m. America/Chicago weekly email covering the following Monday–Sunday.

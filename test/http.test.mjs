@@ -41,6 +41,12 @@ test('HTTP registration, approval, family isolation, and authenticated styled pr
     const child=memberData.members.find(m=>m.kind==='child');assert.ok(child);
     const plan={title:'Family event',start:'2026-10-20T12:00',end:'2026-10-20T13:00',repeat:'none',reminder:15,members:[child.id]};
     const saved=await call('events',plan,first.cookie);assert.equal(saved.status,201);
+    const repeating=await call('events',{...plan,repeat:'weekly'},first.cookie);
+    const seriesId=repeating.data.id;
+    assert.equal((await call('events',{...plan,id:seriesId,version:1,repeat:'weekly',title:'Updated series',start:'2026-10-20T14:15',end:'2026-10-20T15:15'},first.cookie)).status,200);
+    const seriesEvents=(await call('data?from=2026-10-19&to=2026-11-02',null,first.cookie)).data.events.filter(e=>e.id===seriesId);
+    assert.equal(seriesEvents.length,2);
+    assert.ok(seriesEvents.every(e=>e.data.title==='Updated series' && e.start.includes('T14:15:')));
     const other=(await call('data?from=2026-10-19&to=2026-10-26',null,outsider.cookie)).data;assert.equal(other.events.length,0);assert.equal(other.requests.length,0);
     assert.equal((await call('events',{...plan,id:saved.data.id,version:1,members:[other.account.id]},outsider.cookie)).status,409);
     assert.equal((await call('events/delete',{id:saved.data.id,version:1},outsider.cookie)).status,409);
