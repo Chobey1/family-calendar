@@ -27,7 +27,7 @@ async function tick() {
           // Avoid sending stale reminders after a long outage or newly entered past events.
           if(due<now.minus({minutes:15}) || DateTime.fromISO(occurrence.start)<=now) continue;
           const message=styledEmail({family,items:[occurrence],members,heading:`Coming up in ${leadTime(event.data.reminder)}`});
-          for(const member of recipients(event,members)) await queue(client,`${event.id}:${event.version}:${occurrence.start}:${member.id}`,family.id,event,member.email,reminderSubject(family,event),message,due);
+          for(const member of recipients(event,members)) await queue(client,`${event.id}:${event.version}:${occurrence.start}:${member.id}`,family.id,event,member.email,reminderSubject(family,occurrence),message,due);
         }
       }
       const window=weeklyWindow(now);

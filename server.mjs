@@ -49,6 +49,7 @@ files.set('/favicon.svg',['public/favicon.svg','image/svg+xml']);
 files.set('/themes.css',['public/themes.css','text/css']);
 files.set('/theme.js',['public/theme.js','text/javascript']);
 files.set('/time-fields.js',['public/time-fields.js','text/javascript']);
+files.set('/milestone-fields.js',['public/milestone-fields.js','text/javascript']);
 files.set('/hearth-landscape.svg',['public/hearth-landscape.svg','image/svg+xml']);
 const server = http.createServer(async (req,res) => {
   res.setHeader('X-Content-Type-Options','nosniff');

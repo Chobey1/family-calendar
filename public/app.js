@@ -1,4 +1,5 @@
 import { configureTimeFields } from './time-fields.js';
+import { configureMilestones } from './milestone-fields.js';
 const $=selector=>document.querySelector(selector);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Keep scrolling in an explicitly bounded inner panel rather than on the modal.
@@ -10,6 +11,7 @@ for (const dialog of document.querySelectorAll('dialog')) {
 }
 let state={members:[],events:[]},selected=null,view='agenda',anchor=new Date(),noticeTimer,registrationSetup=false;
 const syncTimeFields = configureTimeFields($('#event-form'));
+const milestoneFields = configureMilestones($('#event-form'),syncTimeFields,()=>isoDay(new Date()));
 const seriesNotice = document.createElement('p');
 seriesNotice.className = 'series-notice';
 seriesNotice.hidden = true;
@@ -67,6 +69,7 @@ function openEvent(id){
   form.elements.id.value=event?.id||'';form.elements.version.value=event?.version||'';
   if(event){for(const name of ['title','location','address','notes','directions','repeat','until','reminder'])form.elements[name].value=event.data[name]??'';form.elements.start.value=localInput(event.data.start);form.elements.end.value=localInput(event.data.end);form.elements.allDay.checked=event.data.allDay;}
   else{const start=new Date();start.setMinutes(0,0,0);start.setHours(start.getHours()+1);form.elements.start.value=localInput(start);form.elements.end.value=localInput(new Date(+start+3600000));form.elements.reminder.value='60';}
+  milestoneFields.load(event);
   syncTimeFields();
   $('#event-dialog').showModal();
 }

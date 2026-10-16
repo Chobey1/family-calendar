@@ -49,5 +49,21 @@ test('quarter-hour controls preserve old times, roll end dates forward, and save
     assert.equal(document.querySelector('.series-notice').hidden,true);
     assert.equal(form.querySelector('[type="submit"]').textContent,'Save event');
     assert.equal(form.querySelectorAll('option[data-existing]').length,0);
+    form.elements.type.value='birthday';form.elements.type.dispatchEvent(new window.Event('change'));
+    form.elements.honoree.value='Colby';form.elements.honoree.dispatchEvent(new window.Event('input'));
+    form.elements.milestoneDate.value='1986-08-30';form.elements.milestoneDate.dispatchEvent(new window.Event('change'));
+    assert.equal(form.elements.repeat.value,'yearly');assert.equal(form.elements.allDay.checked,true);
+    assert.ok(form.elements.start.value.endsWith('-08-30T00:00'));
+    assert.ok(form.elements.end.value.endsWith('-08-31T00:00'));
+    assert.ok(form.elements.title.value.startsWith('Colby’s '));
+    assert.ok(form.elements.title.value.endsWith(' Birthday!'));
+    form.elements.type.value='anniversary';form.elements.type.dispatchEvent(new window.Event('change'));
+    form.elements.honoree.value='Colby & Jessica';form.elements.honoree.dispatchEvent(new window.Event('input'));
+    form.elements.milestoneDate.value='2015-08-30';form.elements.milestoneDate.dispatchEvent(new window.Event('change'));
+    assert.ok(form.elements.title.value.endsWith(' Anniversary!'));
+    form.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(submitted.type,'anniversary');assert.equal(submitted.honoree,'Colby & Jessica');
+    assert.equal(submitted.milestoneDate,'2015-08-30');assert.equal(submitted.repeat,'yearly');assert.equal(submitted.allDay,true);
   } finally {dom.window.close();}
 });

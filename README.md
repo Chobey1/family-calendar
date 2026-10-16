@@ -9,7 +9,8 @@ Phone-friendly shared calendars for adult accounts and child profiles. Run on Wo
 - Pending applicants cannot read family data. Families have isolated events, members, requests, subscriptions, and email history.
 - Child profiles without logins; tag multiple people and filter events by member.
 - Agenda and month views, detailed events, Apple Maps directions links.
-- One-time, daily, and weekly events with optional repeat end dates. Editing/deleting affects the entire series.
+- One-time, daily, weekly, and yearly events with optional repeat end dates. Editing/deleting affects the entire series.
+- Event types include Event, Birthday, and Anniversary. Birthdays/anniversaries ask for a person/couple's name and original date (including year), automatically schedule the next annual all-day occurrence, and calculate each year's age/count in the title, calendar, emails, and feed. Example: `Colby’s 41st Birthday!` on August 30, 2027 for a DOB of August 30, 1986. February 29 is observed February 28 in non-leap years and returns to February 29 in leap years.
 - Start/end time dropdowns use quarter-hour choices. Changing the start defaults the end to one hour later, including date rollover. Existing off-quarter times remain available until changed.
 - Repeating events have an **Edit series** shortcut, with explicit **Save series** and **Delete series** controls. The first event's dates are shown; changes affect the whole series, including past occurrences.
 - Both parents receive reminders for child events; adult-only events notify tagged adults.
