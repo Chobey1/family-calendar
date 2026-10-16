@@ -46,6 +46,13 @@ function openEvent(id){
   else{const start=new Date();start.setMinutes(0,0,0);start.setHours(start.getHours()+1);form.elements.start.value=localInput(start);form.elements.end.value=localInput(new Date(+start+3600000));form.elements.reminder.value='60';}
   $('#event-dialog').showModal();
 }
+$('#event-form').elements.start.addEventListener('change', event => {
+  // datetime-local values represent wall-clock time, independently of the device's zone.
+  const start = event.currentTarget.valueAsNumber;
+  if (Number.isFinite(start)) {
+    $('#event-form').elements.end.value = new Date(start + 60 * 60 * 1000).toISOString().slice(0, 16);
+  }
+});
 $('#login-form').addEventListener('submit',guarded(async e=>{e.preventDefault();await api('login',Object.fromEntries(new FormData(e.target)));await load();}));
 $('#show-register').onclick=()=>{$('#login-form').hidden=true;$('#register-form').hidden=false;};
 $('#show-login').onclick=()=>{$('#register-form').hidden=true;$('#login-form').hidden=false;};
