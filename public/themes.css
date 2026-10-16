@@ -1,0 +1,69 @@
+/* Modern is the original palette. Hearth adds a quiet storybook countryside. */
+#theme-toggle { white-space: nowrap; font-size: 13px; }
+:root[data-theme="hearth"] {
+  --green: #405b39;
+  --line: #cebf9d;
+  --muted: #726548;
+  color: #3e382b;
+  background: #ece3ce;
+  background-image: radial-gradient(ellipse at 20% 0%, #fff8e7 0, transparent 60%), repeating-linear-gradient(3deg, transparent 0 5px, #8e723405 6px 7px);
+}
+[data-theme="hearth"] body { background: transparent; }
+[data-theme="hearth"] header {
+  background: linear-gradient(120deg, #493b2b, #364b32);
+  border-bottom: 3px solid #b69a59;
+  box-shadow: 0 4px 18px #3d301b18;
+}
+[data-theme="hearth"] .brand #family-brand { color: #f5e7bf; }
+[data-theme="hearth"] .brand span { color: #d6c9a8; }
+[data-theme="hearth"] .header-actions .quiet { color: #f5e7bf; }
+[data-theme="hearth"] #theme-toggle { border: 1px solid #b9a26c; background: #ffffff09; }
+[data-theme="hearth"] .intro {
+  position: relative;
+  padding: 30px;
+  border: 1px solid #c6b78e;
+  border-radius: 20px 20px 40px 20px;
+  background-color: #f1e7cd;
+  background-image: linear-gradient(90deg, #f5ecd9 12%, #f5ecd9f5 37%, #f5ecd900 85%), url('/hearth-landscape.svg');
+  background-size: cover;
+  background-position: right center;
+  min-height: 225px;
+  box-shadow: inset 0 0 0 4px #fff8e550, 0 8px 25px #6350220a;
+}
+[data-theme="hearth"] .intro > div { max-width: 70%; }
+[data-theme="hearth"] .intro h1 { color: #3c4b31; }
+[data-theme="hearth"] .intro .muted { color: #665a3e; }
+[data-theme="hearth"] .intro > button { align-self: flex-end; }
+[data-theme="hearth"] .eyebrow { color: #766334; }
+[data-theme="hearth"] button:not(.quiet):not(.event-title):not(.month-event) { box-shadow: inset 0 1px 0 #ffffff25; }
+[data-theme="hearth"] .event-card {
+  background: linear-gradient(110deg, #fcf7e9, #f6eedb);
+  border-color: #d3c4a3;
+  border-left: 4px solid #879165;
+  box-shadow: 0 3px 10px #53422408;
+}
+[data-theme="hearth"] .event-title { color: #3e382b; }
+[data-theme="hearth"] .event-time { color: #5c6643; }
+[data-theme="hearth"] .tag { background: #e9e4cc; color: #514a35; }
+[data-theme="hearth"] .secondary { background: #e4dcc2; color: #405b39; }
+[data-theme="hearth"] .danger { background: #f0daca; color: #853f2c; }
+[data-theme="hearth"] .segmented { background: #ded5b9; }
+[data-theme="hearth"] .segmented button[aria-pressed="true"] { background: #fbf6e8; }
+[data-theme="hearth"] .filters button[aria-pressed="false"] { background: #f7f0df; }
+[data-theme="hearth"] .month-cell { background: #fcf7e9; }
+[data-theme="hearth"] .month-cell.outside { background: #e6dec7; color: #857a5f; }
+[data-theme="hearth"] .weekday { background: #ded8be; color: #514d32; }
+[data-theme="hearth"] .month-event { background: #e2e7cf; color: #344d30; }
+[data-theme="hearth"] .empty { background: #f7efdc; border-color: #bbae89; }
+[data-theme="hearth"] dialog { background: #f7efdc; color: #3e382b; border-color: #b8a16e; box-shadow: 0 15px 70px #281e2140; }
+[data-theme="hearth"] dialog::backdrop { background: #28281999; }
+[data-theme="hearth"] input:not([type="checkbox"]),
+[data-theme="hearth"] select, [data-theme="hearth"] textarea { background: #fffbef; color: #3e382b; border-color: #c8b992; }
+[data-theme="hearth"] input[type="checkbox"] { accent-color: #405b39; }
+[data-theme="hearth"] #notice { background: #405039; color: #fff4d8; }
+@media (max-width: 700px) {
+  .header-actions { justify-content: flex-end; flex-wrap: wrap; max-width: 185px; }
+  #theme-toggle { min-height: 36px; }
+  [data-theme="hearth"] .intro { padding: 24px 20px; background-position: 65% center; background-image: linear-gradient(90deg, #f5ecd9f5 5%, #f5ecd9bd 60%, #f5ecd925), url('/hearth-landscape.svg'); }
+  [data-theme="hearth"] .intro > div { max-width: 100%; }
+}

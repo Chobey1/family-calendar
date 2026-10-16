@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" fill="none">
+  <defs>
+    <linearGradient id="sky" x2="0" y2="300" gradientUnits="userSpaceOnUse"><stop stop-color="#d9dfbb"/><stop offset="1" stop-color="#f3dfae"/></linearGradient>
+    <linearGradient id="door" x2="0" y2="1"><stop stop-color="#6d8050"/><stop offset="1" stop-color="#3b583c"/></linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h900v300H0z"/>
+  <circle cx="742" cy="74" r="33" fill="#f6e4ac"/>
+  <path d="M0 210Q170 100 350 180T900 160v140H0" fill="#a5b17f"/>
+  <path d="M0 265Q190 160 350 220T900 195v105H0" fill="#7e9564"/>
+  <path d="M584 193v-68h22v67" fill="#a58a64"/>
+  <path d="M584 117h25v12h-25z" fill="#80684c"/>
+  <path d="M596 103c-21-19 21-24 2-44" stroke="#faf1d7" stroke-width="9" stroke-linecap="round" opacity=".6"/>
+  <path d="M470 277c12-88 65-122 145-121 79 0 142 37 164 121" fill="#617e4b"/>
+  <path d="M476 260c40-76 178-97 260-9" fill="#b7a076"/>
+  <circle cx="606" cy="245" r="49" fill="#d6bb86"/>
+  <circle cx="606" cy="245" r="39" fill="url(#door)" stroke="#445b3b" stroke-width="3"/>
+  <path d="M590 211v66m16-70v76m16-70v64" stroke="#344c33" stroke-width="2" opacity=".5"/>
+  <circle cx="620" cy="247" r="4" fill="#ddbc6d"/>
+  <circle cx="697" cy="241" r="16" fill="#f6d98e" stroke="#816c47" stroke-width="6"/>
+  <path d="M697 226v30m-15-15h30" stroke="#816c47" stroke-width="3"/>
+  <path d="M588 284q-4 8-21 16h89q-24-9-34-16" fill="#d6c19a"/>
+  <path d="M812 225v-99" stroke="#66553c" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="812" cy="108" r="43" fill="#62794c"/><circle cx="785" cy="132" r="29" fill="#708654"/><circle cx="844" cy="129" r="33" fill="#587346"/>
+  <path d="M0 290q180-48 370-10t530-5v25H0" fill="#516f43"/>
+  <g fill="#dfc783"><circle cx="758" cy="280" r="3"/><circle cx="774" cy="274" r="3"/><circle cx="455" cy="283" r="3"/></g>
+</svg>

@@ -46,6 +46,9 @@ async function login(res, member) {
 const files = new Map([['/',['public/index.html','text/html']],['/app.js',['public/app.js','text/javascript']],['/style.css',['public/style.css','text/css']],['/email-header.png',['public/email-header.png','image/png']]]);
 files.set('/families.css',['public/families.css','text/css']);
 files.set('/favicon.svg',['public/favicon.svg','image/svg+xml']);
+files.set('/themes.css',['public/themes.css','text/css']);
+files.set('/theme.js',['public/theme.js','text/javascript']);
+files.set('/hearth-landscape.svg',['public/hearth-landscape.svg','image/svg+xml']);
 const server = http.createServer(async (req,res) => {
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','no-referrer');
