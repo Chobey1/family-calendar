@@ -20,7 +20,7 @@ services:
     environment:
       DATABASE_URL: postgresql://calendar:${POSTGRES_PASSWORD}@db:5432/family_calendar
     ports:
-      - '${BIND_ADDRESS:-127.0.0.1}:3080:3000'
+      - '${BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3080}:3000'
     depends_on:
       db:
         condition: service_healthy

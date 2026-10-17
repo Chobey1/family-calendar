@@ -6,6 +6,7 @@ import { DateTime } from 'luxon';
 import { db as defaultDb, initialize, familyData as loadFamilyData } from './lib/db.mjs';
 import { zone, token, digest, passwordHash, passwordMatches, validateEvent, occurrences, calendarFeed } from './lib/calendar.mjs';
 import { familyCode, familyName, createFamily, requestJoin, reviewJoin } from './lib/families.mjs';
+import { validateTodo } from './lib/todos.mjs';
 
 export async function createApplication(db=defaultDb) {
 await initialize(db);
@@ -50,6 +51,8 @@ files.set('/themes.css',['public/themes.css','text/css']);
 files.set('/theme.js',['public/theme.js','text/javascript']);
 files.set('/time-fields.js',['public/time-fields.js','text/javascript']);
 files.set('/milestone-fields.js',['public/milestone-fields.js','text/javascript']);
+files.set('/todos.js',['public/todos.js','text/javascript']);
+files.set('/todos.css',['public/todos.css','text/css']);
 files.set('/hearth-landscape.svg',['public/hearth-landscape.svg','image/svg+xml']);
 const server = http.createServer(async (req,res) => {
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -140,10 +143,11 @@ const server = http.createServer(async (req,res) => {
       const data=await familyData(account.family_id);
       const family=(await db.query('SELECT id,name,join_code FROM families WHERE id=$1',[account.family_id])).rows[0];
       const requests=(await db.query('SELECT m.id,m.name,m.email,r.created_at FROM join_requests r JOIN members m ON m.id=r.member_id WHERE r.family_id=$1 ORDER BY r.created_at',[account.family_id])).rows;
+      const todos=(await db.query('SELECT * FROM todos WHERE family_id=$1 AND deleted=false',[account.family_id])).rows;
       const from=DateTime.fromISO(url.searchParams.get('from') || DateTime.now().toISODate(),{zone}).startOf('day');
       const to=DateTime.fromISO(url.searchParams.get('to') || from.plus({days:42}).toISODate(),{zone}).startOf('day');
       if (!from.isValid || !to.isValid || to<=from || to.diff(from,'days').days>370) throw new Error('Choose a date range of up to one year.');
-      return send(res,200,{family,requests,members:data.members,events:data.events.flatMap(e=>occurrences(e,from,to)).sort((a,b)=>a.start.localeCompare(b.start)),account:{id:account.id,name:account.name},zone,mailMode:process.env.MAIL_MODE || 'preview'});
+      return send(res,200,{family,requests,todos,members:data.members,events:data.events.flatMap(e=>occurrences(e,from,to)).sort((a,b)=>a.start.localeCompare(b.start)),account:{id:account.id,name:account.name},zone,mailMode:process.env.MAIL_MODE || 'preview'});
     }
     if(req.method==='POST' && path==='/api/family/create') {
       const input=await body(req); await createFamily(db,account.id,input.name); return send(res,201,{ok:true});
@@ -157,6 +161,33 @@ const server = http.createServer(async (req,res) => {
     }
     // All remaining APIs require approved adult membership. Pending applicants cannot read calendar, members, email, or settings.
     if(!account.family_id || account.kind!=='adult') return send(res,403,{error:'Join or create a family first. Joining requires adult approval.'});
+    if(req.method==='GET' && path==='/api/todos') {
+      const result=await db.query('SELECT * FROM todos WHERE family_id=$1 AND deleted=false',[account.family_id]);
+      return send(res,200,{todos:result.rows});
+    }
+    if(req.method==='POST' && path==='/api/todos') {
+      const input=await body(req);
+      const members=(await familyData(account.family_id)).members;
+      const data=validateTodo(input,members);
+      if(input.id) {
+        if(!uuid(input.id) || !Number.isInteger(input.version)) throw new Error('Invalid task.');
+        const result=await db.query('UPDATE todos SET data=$1,version=version+1,updated_at=now() WHERE id=$2 AND family_id=$3 AND version=$4 AND deleted=false RETURNING id',[data,input.id,account.family_id,input.version]);
+        if(!result.rowCount) return send(res,409,{error:'This task changed. Refresh the task list and try again.'});
+        return send(res,200,{id:input.id});
+      }
+      const id=randomUUID();await db.query('INSERT INTO todos (id,family_id,data) VALUES ($1,$2,$3)',[id,account.family_id,data]);
+      return send(res,201,{id});
+    }
+    if(req.method==='POST' && ['/api/todos/complete','/api/todos/delete'].includes(path)) {
+      const input=await body(req);
+      if(!uuid(input.id) || !Number.isInteger(input.version)) throw new Error('Invalid task.');
+      if(path.endsWith('/complete') && typeof input.completed!=='boolean') throw new Error('Choose a valid completion state.');
+      const result=path.endsWith('/delete')
+        ?await db.query('UPDATE todos SET deleted=true,version=version+1,updated_at=now() WHERE id=$1 AND family_id=$2 AND version=$3 AND deleted=false RETURNING id',[input.id,account.family_id,input.version])
+        :await db.query('UPDATE todos SET completed_at=CASE WHEN $4 THEN now() ELSE NULL END,completed_by=CASE WHEN $4 THEN $5::uuid ELSE NULL END,version=version+1,updated_at=now() WHERE id=$1 AND family_id=$2 AND version=$3 AND deleted=false RETURNING id',[input.id,account.family_id,input.version,input.completed,account.id]);
+      if(!result.rowCount) return send(res,409,{error:'This task changed. Refresh the task list and try again.'});
+      return send(res,200,{ok:true});
+    }
     if(req.method==='POST' && path==='/api/family/name') {
       const input=await body(req);await db.query('UPDATE families SET name=$1 WHERE id=$2',[familyName(input.name),account.family_id]);return send(res,200,{ok:true});
     }

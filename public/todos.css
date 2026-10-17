@@ -1,0 +1,41 @@
+.workspace { max-width: 1560px; }
+.calendar-todo-layout { display:grid;grid-template-columns:minmax(0,1fr) minmax(310px,370px);gap:32px;align-items:start; }
+.calendar-pane { min-width:0; }
+.todo-panel { border:1px solid var(--line);border-radius:18px;background:#faf9f5;padding:22px;min-width:0; }
+.todo-heading { display:flex;justify-content:space-between;align-items:center;gap:12px; }
+.todo-heading h2 { font-family:Georgia,serif;font-size:29px;font-weight:400;margin-top:8px; }
+.todo-heading .eyebrow { font-size:9px;letter-spacing:1.2px; }
+.todo-heading button { padding:9px 12px;white-space:nowrap;font-size:13px; }
+#todo-filters { gap:6px;padding:18px 0 8px; }
+#todo-filters button { font-size:11px;padding:6px 9px;min-height:36px; }
+.todo-list-heading { display:flex;align-items:center;justify-content:space-between;gap:8px; }
+.todo-list-heading button { font-size:12px;padding:5px 8px;min-height:32px; }
+.todo-row { display:flex;gap:12px;padding:18px 0;border-top:1px solid var(--line); }
+.todo-check { flex:0 0 24px;width:24px;height:24px;min-height:24px;padding:0;margin-top:2px;border:2px solid #8a9b89;border-radius:50%;background:transparent;color:white;font-size:14px; }
+.todo-check[aria-checked=true] { background:var(--green);border-color:var(--green); }
+.todo-check:hover { border-color:var(--green);background:#dfe8dc; }
+.todo-check[aria-checked=true]:hover { background:var(--green); }
+.todo-check:disabled { opacity:.5;cursor:wait; }
+.todo-content { min-width:0;flex:1; }
+.todo-title { min-height:24px;padding:0;background:transparent;color:#263c34;font-size:15px;text-align:left;line-height:1.5;overflow-wrap:anywhere;border-radius:3px; }
+.todo-notes { white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:var(--muted);line-height:1.6;margin:6px 0; }
+.todo-row .tags { margin-top:8px; }
+.todo-row .tag { font-size:10px;padding:4px 7px; }
+.todo-due { font-size:11px;color:var(--muted);margin:9px 0 0;line-height:1.5; }
+.todo-due.overdue { color:#98432f;font-weight:650; }
+.todo-empty { color:var(--muted);font-size:13px;line-height:1.7;padding:18px 0;margin:0; }
+#todo-completed { border-top:1px solid var(--line);margin-top:12px;padding-top:16px; }
+#todo-completed summary { cursor:pointer;font-size:13px;font-weight:650;min-height:32px; }
+.is-complete .todo-title { color:var(--muted);text-decoration:line-through; }
+[data-theme=hearth] .todo-panel { background:linear-gradient(120deg,#fcf7e9,#f3ead3);border-color:#c6b78e;box-shadow:0 4px 18px #6350220a; }
+[data-theme=hearth] .todo-title { color:#3e382b; }
+[data-theme=hearth] .todo-check { border-color:#89936c;box-shadow:none!important; }
+[data-theme=hearth] .todo-due.overdue { color:#8a3f28; }
+@media(min-width:1051px) and (max-width:1250px) {
+  .calendar-pane .event-card { grid-template-columns:85px 1fr; }
+  .calendar-pane .event-card .map-link { grid-column:2; }
+  .calendar-pane .toolbar { flex-wrap:wrap; }
+  .calendar-pane .day-group { grid-template-columns:65px 1fr;gap:14px; }
+}
+@media(max-width:1050px) { .calendar-todo-layout { grid-template-columns:1fr;gap:32px; } }
+@media(max-width:700px) { .todo-panel { padding:20px; } }

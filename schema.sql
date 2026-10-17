@@ -26,3 +26,10 @@ CREATE TABLE IF NOT EXISTS join_requests (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE mail_jobs ADD COLUMN IF NOT EXISTS html text;
+CREATE TABLE IF NOT EXISTS todos (
+  id uuid PRIMARY KEY, family_id uuid NOT NULL REFERENCES families(id), data jsonb NOT NULL,
+  completed_at timestamptz, completed_by uuid REFERENCES members(id),
+  version integer NOT NULL DEFAULT 1, deleted boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS todos_family ON todos(family_id) WHERE deleted=false;

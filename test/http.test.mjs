@@ -28,6 +28,8 @@ test('HTTP registration, approval, family isolation, and authenticated styled pr
     assert.equal((await call('data',null,applicant.cookie)).data.pending,true);
     for(const path of ['mail'])assert.equal((await call(path,null,applicant.cookie)).status,403);
     assert.equal((await call('feed',{},applicant.cookie)).status,403);
+    assert.equal((await call('todos',null,applicant.cookie)).status,403);
+    assert.equal((await call('todos',{title:'Not allowed',members:[original.account.id]},applicant.cookie)).status,403);
     assert.equal((await call('members',{name:'Forbidden'},applicant.cookie)).status,403);
     const outsider=await register('outsider@example.com');await call('family/create',{name:'Other Family'},outsider.cookie);
     const requests=(await call('data',null,first.cookie)).data.requests;
@@ -38,6 +40,23 @@ test('HTTP registration, approval, family isolation, and authenticated styled pr
     assert.equal((await call('family/name',{name:'Worley Family'},applicant.cookie)).status,200);
     await call('members',{name:'Child'},applicant.cookie);
     const memberData=(await call('data',null,first.cookie)).data;
+    // Shared completion is one family record, not a separate item per tagged person.
+    const task=await call('todos',{title:'Get groceries',due:'2026-10-17',notes:'Milk',members:[original.account.id,applicantId]},first.cookie);
+    assert.equal(task.status,201);
+    let tasks=(await call('todos',null,applicant.cookie)).data.todos;assert.equal(tasks.length,1);
+    assert.deepEqual(tasks[0].data.members,[original.account.id,applicantId]);
+    assert.equal((await call('todos',null,outsider.cookie)).data.todos.length,0);
+    assert.equal((await call('todos/complete',{id:task.data.id,version:1,completed:true},outsider.cookie)).status,409);
+    assert.equal((await call('todos/delete',{id:task.data.id,version:1},outsider.cookie)).status,409);
+    assert.equal((await call('todos',{title:'Forbidden tag',members:[original.account.id]},outsider.cookie)).status,400);
+    assert.equal((await call('todos/complete',{id:task.data.id,version:1,completed:true},applicant.cookie)).status,200);
+    tasks=(await call('todos',null,first.cookie)).data.todos;assert.ok(tasks[0].completed_at);assert.equal(tasks[0].completed_by,applicantId);
+    assert.equal((await call('todos/complete',{id:task.data.id,version:1,completed:true},first.cookie)).status,409);
+    assert.equal((await call('todos/complete',{id:task.data.id,version:2,completed:false},first.cookie)).status,200);
+    const editedTask=await call('todos',{id:task.data.id,version:3,title:'Get groceries today',due:'',members:[applicantId]},first.cookie);assert.equal(editedTask.status,200);
+    tasks=(await call('data',null,applicant.cookie)).data.todos;assert.equal(tasks[0].completed_at,null);assert.equal(tasks[0].completed_by,null);assert.equal(tasks[0].data.due,null);assert.equal(tasks[0].data.title,'Get groceries today');
+    assert.equal((await call('todos/delete',{id:task.data.id,version:4},first.cookie)).status,200);
+    assert.equal((await call('todos',null,applicant.cookie)).data.todos.length,0);
     const child=memberData.members.find(m=>m.kind==='child');assert.ok(child);
     const plan={title:'Family event',start:'2026-10-20T12:00',end:'2026-10-20T13:00',repeat:'none',reminder:15,members:[child.id]};
     const saved=await call('events',plan,first.cookie);assert.equal(saved.status,201);

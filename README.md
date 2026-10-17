@@ -1,5 +1,11 @@
 # Our family calendar — private proof of concept
 
+## To-Do test branch
+
+On `codex/shared-todos`, the calendar and shared To-Dos appear side by side on desktop and stack on narrower screens. Tasks have a title, notes, optional due date, and family-member tags. A separate person filter narrows tasks; active items sort by due date with undated tasks last. Round completion controls move the shared task into a collapsed Completed list for everyone tagged. Completed items can be restored. Tasks do not enter calendar events, feeds, emails, or digests. Visible pages refresh shared tasks every 30 seconds, with a manual Refresh button as well.
+
+See [TODO-TESTING.md](TODO-TESTING.md) to run a separate test instance on port 3081 without modifying the live database or sending test emails. This branch is not merged into main.
+
 Phone-friendly shared calendars for adult accounts and child profiles. Run on Worleyserver using Docker Compose and private home-network/Tailscale access. Nothing is published to a hosted service by this project.
 
 ## Included

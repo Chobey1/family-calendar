@@ -1,5 +1,6 @@
 import { configureTimeFields } from './time-fields.js';
 import { configureMilestones } from './milestone-fields.js';
+import { configureTodos } from './todos.js';
 const $=selector=>document.querySelector(selector);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Keep scrolling in an explicitly bounded inner panel rather than on the modal.
@@ -10,6 +11,7 @@ for (const dialog of document.querySelectorAll('dialog')) {
   dialog.append(panel);
 }
 let state={members:[],events:[]},selected=null,view='agenda',anchor=new Date(),noticeTimer,registrationSetup=false;
+const todos = configureTodos({api,notify,escapeHtml:esc,tone,today:()=>isoDay(new Date())});
 const syncTimeFields = configureTimeFields($('#event-form'));
 const milestoneFields = configureMilestones($('#event-form'),syncTimeFields,()=>isoDay(new Date()));
 const seriesNotice = document.createElement('p');
@@ -29,6 +31,7 @@ function showAuth(setup){document.title='Family Calendar';registrationSetup=setu
 function range(){if(view==='month'){const start=new Date(anchor.getFullYear(),anchor.getMonth(),1,12);return {from:dayAdd(start,-start.getDay()),to:dayAdd(start,42)};}const start=new Date(anchor.getFullYear(),anchor.getMonth(),anchor.getDate(),12);return {from:start,to:dayAdd(start,28)};}
 async function load(){const {from,to}=range();state=await api(`data?from=${isoDay(from)}&to=${isoDay(to)}`);$('#auth').hidden=true;$('#onboarding').hidden=!state.needsFamily;$('#app').hidden=!!state.needsFamily;if(state.needsFamily){$('#pending-panel').hidden=!state.pending;$('#family-choices').hidden=state.pending;return;}if(selected&&!state.members.some(m=>m.id===selected))selected=null;render();}
 function render(){
+  todos.render(state);
   document.title=`${state.family.name} Calendar`;
   $('#family-brand').textContent=state.family.name;
   $('#today').textContent=new Date().toLocaleDateString('en-US',{timeZone:zone,weekday:'long',month:'long',day:'numeric'});
