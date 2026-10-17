@@ -31,6 +31,7 @@ test('HTTP registration, approval, family isolation, and authenticated styled pr
     assert.equal((await call('todos',null,applicant.cookie)).status,403);
     assert.equal((await call('todos',{title:'Not allowed',members:[original.account.id]},applicant.cookie)).status,403);
     assert.equal((await call('members',{name:'Forbidden'},applicant.cookie)).status,403);
+    assert.equal((await call('members/name',{id:original.account.id,name:'Not allowed'},applicant.cookie)).status,403);
     const outsider=await register('outsider@example.com');await call('family/create',{name:'Other Family'},outsider.cookie);
     const requests=(await call('data',null,first.cookie)).data.requests;
     assert.equal(requests.length,1);const applicantId=requests[0].id;
@@ -40,6 +41,13 @@ test('HTTP registration, approval, family isolation, and authenticated styled pr
     assert.equal((await call('family/name',{name:'Worley Family'},applicant.cookie)).status,200);
     await call('members',{name:'Child'},applicant.cookie);
     const memberData=(await call('data',null,first.cookie)).data;
+    assert.equal((await call('members/name',{id:original.account.id,name:'Wrong family'},outsider.cookie)).status,404);
+    assert.equal((await call('members/name',{id:original.account.id,name:'  '},first.cookie)).status,400);
+    assert.equal((await call('members/name',{id:original.account.id,name:' Colby '},first.cookie)).status,200);
+    const renamed=(await call('data',null,first.cookie)).data;
+    assert.equal(renamed.account.name,'Colby');
+    assert.equal(renamed.members.find(m=>m.id===original.account.id).name,'Colby');
+    assert.equal(renamed.members.find(m=>m.id===original.account.id).email,'owner@example.com');
     // Shared completion is one family record, not a separate item per tagged person.
     const task=await call('todos',{title:'Get groceries',due:'2026-10-17',notes:'Milk',members:[original.account.id,applicantId]},first.cookie);
     assert.equal(task.status,201);

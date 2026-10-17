@@ -205,6 +205,13 @@ const server = http.createServer(async (req,res) => {
       res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','Content-Security-Policy':"sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'"});
       return res.end(job.html.replaceAll('cid:family-header','/email-header.png'));
     }
+    if(req.method==='POST' && path==='/api/members/name') {
+      const input=await body(req);
+      if(!uuid(input.id) || typeof input.name!=='string' || !input.name.trim() || input.name.trim().length>80) throw new Error('Enter a name of 1–80 characters.');
+      const result=await db.query('UPDATE members SET name=$1 WHERE id=$2 AND family_id=$3 RETURNING id',[input.name.trim(),input.id,account.family_id]);
+      if(!result.rowCount)return send(res,404,{error:'Family member not found.'});
+      return send(res,200,{ok:true});
+    }
     if(req.method==='POST' && path==='/api/members') {
       const input=await body(req);
       if(typeof input.name!=='string' || !input.name.trim() || input.name.length>80) throw new Error('Enter a name of 1–80 characters.');

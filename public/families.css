@@ -24,3 +24,6 @@ dialog {
 .series-notice { padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: #e8ede5; line-height: 1.6; font-size: 13px; }
 [data-theme="hearth"] .series-notice { background: #e9e4cc; }
 .series-edit { padding: 4px 9px; min-height: 32px; font-size: 12px; text-decoration: underline; }
+.family-row { flex-wrap: wrap; }
+.member-rename { margin-left: auto; font-size: 12px; padding: 5px 8px; min-height: 34px; }
+.family-row small { flex-basis: 100%; margin-left: 19px; overflow-wrap: anywhere; }
