@@ -1,6 +1,6 @@
 # Family registration and styled emails
 
-## Update Worleyserver
+## Update your server
 
 Your existing accounts, passwords, sessions, children, events, subscription links, family names, and mail history are preserved. Startup runs an additive, repeatable database migration. No new SMTP credentials are required.
 
@@ -13,7 +13,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-Leave `.env` in place. Reload your browser and set the family name in **Family & settings**, for example **Worley Family**. Existing names are preserved, including the old default `Our family`. The invitation code and pending join requests are available there too.
+Leave `.env` in place. Reload your browser and set the family name in **Family & settings**, for example **Example Family**. Existing names are preserved, including the old default `Our family`. The invitation code and pending join requests are available there too.
 
 Create a new future test event to check the styled email in both inboxes. Historical sent/preview messages retain their original text and are not resent. Pending reminders still using the old plain-text format are upgraded when encountered by the scheduler. Email rendering should be checked in the actual email clients after deployment.
 
@@ -33,8 +33,8 @@ The first account on a fresh installation requires the server's SETUP_TOKEN; exi
 
 ## Emails
 
-- Reminder subject: **Worley Family – Soccer practice in 15 minutes**. One-hour/day reminders use corresponding wording.
-- Weekly subject: **Worley Family – Our week ahead · Oct 19–Oct 25**.
+- Reminder subject: **Example Family – Soccer practice in 15 minutes**. One-hour/day reminders use corresponding wording.
+- Weekly subject: **Example Family – Our week ahead · Oct 19–Oct 25**.
 - A shared original calendar-and-landscape illustration sits above a dark green family-name header. It is embedded inline in the email, without a remote image host; some clients may still hide images.
 - Content includes event time, tagged members, venue/address, notes, directions, and buttons for Maps and the calendar.
 - Weekly emails group events by day. All emails include plain-text alternatives.

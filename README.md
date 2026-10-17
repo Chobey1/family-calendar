@@ -6,7 +6,7 @@ The calendar and shared To-Dos appear side by side on desktop and stack on narro
 
 Shared To-Dos and family member name editing are included in `main`. See [TODO-TESTING.md](TODO-TESTING.md) if you want a separate test instance on port 3081 without modifying the live database or sending test emails.
 
-Phone-friendly shared calendars for adult accounts and child profiles. Run on Worleyserver using Docker Compose and private home-network/Tailscale access. Nothing is published to a hosted service by this project.
+Phone-friendly shared calendars for adult accounts and child profiles. Self-hosted with Docker Compose. Nothing is published to a hosted service by this project.
 
 ## Included
 
@@ -16,47 +16,15 @@ Phone-friendly shared calendars for adult accounts and child profiles. Run on Wo
 - Child profiles without logins; tag multiple people and filter events by member.
 - Agenda and month views, detailed events, Apple Maps directions links.
 - One-time, daily, weekly, and yearly events with optional repeat end dates. Editing/deleting affects the entire series.
-- Event types include Event, Birthday, and Anniversary. Birthdays/anniversaries ask for a person/couple's name and original date (including year), automatically schedule the next annual all-day occurrence, and calculate each year's age/count in the title, calendar, emails, and feed. Example: `Colby’s 41st Birthday!` on August 30, 2027 for a DOB of August 30, 1986. February 29 is observed February 28 in non-leap years and returns to February 29 in leap years.
+- Event types include Event, Birthday, and Anniversary. Birthdays/anniversaries ask for a person/couple's name and original date (including year), automatically schedule the next annual all-day occurrence, and calculate each year's age/count in the title, calendar, emails, and feed. February 29 is observed February 28 in non-leap years and returns to February 29 in leap years.
 - Start/end time dropdowns use quarter-hour choices. Changing the start defaults the end to one hour later, including date rollover. Existing off-quarter times remain available until changed.
 - Repeating events have an **Edit series** shortcut, with explicit **Save series** and **Delete series** controls. The first event's dates are shown; changes affect the whole series, including past occurrences.
 - Both parents receive reminders for child events; adult-only events notify tagged adults.
 - Reminder options: off, 15 minutes, 30 minutes, 1 hour, or 1 day before.
 - Sunday 3 p.m. America/Chicago weekly email covering the following Monday–Sunday.
 - Preview mode saves email content inside Family & settings; SMTP mode sends through SMTP2GO.
-- Styled HTML reminders/digests include an illustrated header, family name, details, calendar/maps buttons, and a plain-text fallback. Subject example: `Worley Family – Soccer practice in 15 minutes`.
+- Styled HTML reminders/digests include an illustrated header, family name, details, calendar/maps buttons, and a plain-text fallback. Subject example: `Example Family – Soccer practice in 15 minutes`.
 - Revocable private read-only ICS feed, including all-day events. Expanded occurrences cover one month back and twelve months ahead.
-
-## Run on Worleyserver
-
-Requires Docker Engine, the Docker Compose plugin, and Tailscale. Copy this entire folder to a location you manage on Worleyserver. Do not copy `node_modules`.
-
-1. Copy `.env.example` to `.env`.
-2. Generate **two different** secrets (for example, run `openssl rand -hex 32` twice). Put one in `SETUP_TOKEN` and the other in `POSTGRES_PASSWORD`. Use hexadecimal for the database password so it is safe in the connection URL.
-3. Keep `MAIL_MODE=preview` initially. Leave SMTP credentials blank.
-4. Start the application:
-
-   ```sh
-   docker compose up -d --build
-   ```
-
-5. On Worleyserver, route the service through Tailscale HTTPS. For a host-installed Tailscale client, the expected command is:
-
-   ```sh
-   tailscale serve --bg http://127.0.0.1:3080
-   ```
-
-   This depends on your Tailscale setup. Check existing Serve routes before replacing them. If Tailscale runs in a container, its networking needs separate configuration. **Do not enable Funnel** for this private test.
-
-6. Set `APP_URL` to the exact HTTPS URL reported by Tailscale (without a trailing slash), then apply it:
-
-   ```sh
-   docker compose up -d
-   ```
-
-7. With Tailscale connected, open that URL from your phone. Create the first adult account using the setup token, then create and name your family. Share the family code from Family & settings with your spouse. They create their own account and request to join; approve them in Family & settings. After the first account is created, remove the setup token from `.env` and run `docker compose up -d` again. Existing accounts remain valid.
-8. Add child profiles in **Family & settings**. Create an event roughly 17 minutes from now with a 15-minute reminder. Within about one minute of its due time, inspect **View recent email activity** for the preview.
-
-If port 3080 is already used, change its host-side mapping in `compose.yaml` and the Tailscale target. The database is not exposed on a host port. Keep Tailscale access rules limited to the intended devices/users.
 
 ## Connect SMTP2GO
 

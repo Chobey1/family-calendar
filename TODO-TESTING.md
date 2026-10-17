@@ -2,7 +2,9 @@
 
 Shared To-Dos are now included in `main`. The original `codex/shared-todos` branch remains available as a historical test branch. For ongoing testing, use `main` as shown below.
 
-## Safest test: separate instance on Worleyserver
+## Safest test: separate instance on your server
+
+Replace `SERVER_LAN_IP` below with your own private server address.
 
 These commands create another checkout, containers, and database on port **3081**, leaving the live calendar on **3080**. The named Compose project keeps its database volume separate. Emails are forced to preview mode to avoid sending test reminders.
 
@@ -13,8 +15,8 @@ cd family-calendar-test
 cp ../family-calendar/.env .env
 chmod 600 .env
 printf '\nAPP_PORT=3081\n' >> .env
-sed -i 's|^APP_URL=.*|APP_URL=http://192.168.1.142:3081|' .env
-sed -i 's|^BIND_ADDRESS=.*|BIND_ADDRESS=192.168.1.142|' .env
+sed -i 's|^APP_URL=.*|APP_URL=http://SERVER_LAN_IP:3081|' .env
+sed -i 's|^BIND_ADDRESS=.*|BIND_ADDRESS=SERVER_LAN_IP|' .env
 sed -i 's|^COOKIE_SECURE=.*|COOKIE_SECURE=false|' .env
 sed -i 's|^MAIL_MODE=.*|MAIL_MODE=preview|' .env
 sed -i '/^SETUP_TOKEN=/d' .env
@@ -22,7 +24,7 @@ printf 'SETUP_TOKEN=%s\n' "$(openssl rand -hex 32)" >> .env
 docker compose -p hearth-todo-test up -d --build
 ```
 
-If the test folder already exists, update that checkout with `git pull --ff-only` instead of cloning again. Adjust the port if 3081 is already used. Open **http://192.168.1.142:3081 in a private/incognito browser window**. Cookies are shared across ports on the same host, so a private window prevents the test login from replacing your live login.
+If the test folder already exists, update that checkout with `git pull --ff-only` instead of cloning again. Adjust the port if 3081 is already used. Open **http://SERVER_LAN_IP:3081 in a private/incognito browser window**. Cookies are shared across ports on the same host, so a private window prevents the test login from replacing your live login.
 
 This is a fresh test database. Create test parent accounts/family and child profiles; the live calendar's existing data is not copied. Retrieve the test setup token privately with `grep '^SETUP_TOKEN=' .env` and enter its value in the first-account setup screen.
 

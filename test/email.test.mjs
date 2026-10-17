@@ -13,10 +13,10 @@ test('reminder subject uses the family, event, and selected lead time',()=>{
   assert.ok(!reminderSubject({name:'Family\r\nBcc: x'},event).includes('\n'));
 });
 test('styled reminder contains an embedded header, details, and text fallback',()=>{
-  process.env.APP_URL='http://192.168.1.142:3080';
+  process.env.APP_URL='http://192.0.2.10:3080';
   const result=styledEmail({family,items:[event],members,heading:'Coming up in 15 minutes'});
   for(const text of ['cid:family-header','Worley Family','Soccer practice','Kid','Bring water','West entrance','Get directions','Open family calendar'])assert.ok(result.html.includes(text));
-  assert.ok(result.text.includes('123 Main St'));assert.ok(result.text.includes('4:25 PM'));assert.ok(result.html.includes('http://192.168.1.142:3080'));
+  assert.ok(result.text.includes('123 Main St'));assert.ok(result.text.includes('4:25 PM'));assert.ok(result.html.includes('http://192.0.2.10:3080'));
 });
 test('event and family text are escaped and invalid application URLs never become buttons',()=>{
   process.env.APP_URL='javascript:alert(1)';
@@ -31,7 +31,7 @@ test('weekly email groups events by day and handles empty weeks',()=>{
   assert.ok(styledEmail({family,items:[],members,heading:'Week ahead',digest:true}).html.includes('No events scheduled'));
 });
 test('SMTP message packages HTML, plain text, and the inline graphic together',async()=>{
-  process.env.APP_URL='http://192.168.1.142:3080';
+  process.env.APP_URL='http://192.0.2.10:3080';
   const message=styledEmail({family,items:[event],members,heading:'Coming up in 15 minutes'});
   const transport=nodemailer.createTransport({streamTransport:true,buffer:true,newline:'windows'});
   const result=await transport.sendMail({from:'calendar@example.com',to:'parent@example.com',subject:reminderSubject(family,event),text:message.text,html:message.html,attachments:[{filename:'family-header.png',path:fileURLToPath(new URL('../public/email-header.png',import.meta.url)),cid:'family-header',contentDisposition:'inline'}]});
