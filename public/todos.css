@@ -1,6 +1,8 @@
 .workspace { max-width: 1560px; }
-.calendar-todo-layout { display:grid;grid-template-columns:minmax(0,1fr) minmax(310px,370px);gap:32px;align-items:start; }
-.calendar-pane { min-width:0; }
+.calendar-todo-layout { display:grid;grid-template-columns:minmax(0,1fr) minmax(310px,370px);column-gap:32px;align-items:start; }
+.calendar-controls { grid-column:1;grid-row:1;min-width:0; }
+.calendar-pane { grid-column:1;grid-row:2;min-width:0; }
+.todo-panel { grid-column:2;grid-row:2; }
 .todo-panel { border:1px solid var(--line);border-radius:18px;background:#faf9f5;padding:22px;min-width:0; }
 .todo-heading { display:flex;justify-content:space-between;align-items:center;gap:12px; }
 .todo-heading h2 { font-family:Georgia,serif;font-size:29px;font-weight:400;margin-top:8px; }
@@ -34,8 +36,12 @@
 @media(min-width:1051px) and (max-width:1250px) {
   .calendar-pane .event-card { grid-template-columns:85px 1fr; }
   .calendar-pane .event-card .map-link { grid-column:2; }
-  .calendar-pane .toolbar { flex-wrap:wrap; }
+  .calendar-controls .toolbar { flex-wrap:wrap; }
   .calendar-pane .day-group { grid-template-columns:65px 1fr;gap:14px; }
 }
-@media(max-width:1050px) { .calendar-todo-layout { grid-template-columns:1fr;gap:32px; } }
+@media(max-width:1050px) {
+  .calendar-todo-layout { grid-template-columns:1fr; }
+  .calendar-controls,.calendar-pane,.todo-panel { grid-column:1;grid-row:auto; }
+  .todo-panel { margin-top:32px; }
+}
 @media(max-width:700px) { .todo-panel { padding:20px; } }

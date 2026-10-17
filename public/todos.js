@@ -2,12 +2,14 @@ export function configureTodos({api,notify,escapeHtml:h,tone,today}) {
   const stylesheet=document.createElement('link');stylesheet.rel='stylesheet';stylesheet.href='/todos.css';document.head.append(stylesheet);
   const workspace=document.querySelector('.workspace');
   const split=document.createElement('div');split.className='calendar-todo-layout';
+  const controls=document.createElement('div');controls.className='calendar-controls';
   const calendar=document.createElement('section');calendar.className='calendar-pane';calendar.setAttribute('aria-label','Calendar');
   workspace.querySelector('.toolbar').before(split);
-  for(const selector of ['.toolbar','#filters','#calendar','#footer'])calendar.append(workspace.querySelector(selector));
+  for(const selector of ['.toolbar','#filters'])controls.append(workspace.querySelector(selector));
+  for(const selector of ['#calendar','#footer'])calendar.append(workspace.querySelector(selector));
   const panel=document.createElement('aside');panel.className='todo-panel';panel.setAttribute('aria-labelledby','todo-heading');
   panel.innerHTML=`<div class="todo-heading"><div><div class="eyebrow">A little less to remember</div><h2 id="todo-heading">To-Dos</h2></div><button id="add-todo" type="button">＋ Add task</button></div><div id="todo-filters" class="filters" aria-label="Filter tasks by family member"></div><div class="todo-list-heading"><p id="todo-count" class="muted small" role="status"></p><button id="refresh-todos" type="button" class="quiet">Refresh</button></div><div id="todo-active"></div><details id="todo-completed"><summary>Completed <span id="todo-completed-count"></span></summary><div id="todo-done"></div></details>`;
-  split.append(calendar,panel);
+  split.append(controls,calendar,panel);
   const dialog=document.createElement('dialog');dialog.id='todo-dialog';
   dialog.innerHTML=`<div class="dialog-scroll"><form id="todo-form"><div class="dialog-heading"><h2 id="todo-form-heading">A new task</h2><button type="button" class="quiet close" aria-label="Close">✕</button></div><input name="id" type="hidden"><input name="version" type="hidden"><label>What needs doing?<input name="title" required maxlength="200" placeholder="Get groceries"></label><fieldset><legend>Who’s involved?</legend><div id="todo-members" class="member-choices"></div></fieldset><label>Due date <span class="optional">optional</span><input name="due" type="date"></label><label>Notes<textarea name="notes" rows="3" maxlength="5000"></textarea></label><p class="muted small">This is one shared task. Completing it checks it off for everyone tagged. Tasks stay separate from calendar events.</p><div class="dialog-actions"><button type="button" id="delete-todo" class="danger" hidden>Delete task</button><button type="submit">Save task</button></div></form></div>`;
   document.body.append(dialog);
