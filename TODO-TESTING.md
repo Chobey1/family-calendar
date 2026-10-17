@@ -1,6 +1,6 @@
-# Test branch: shared To-Dos
+# Optional test instance: shared To-Dos
 
-Branch: `codex/shared-todos`. This feature is not merged into `main`.
+Shared To-Dos are now included in `main`. The original `codex/shared-todos` branch remains available as a historical test branch. For ongoing testing, use `main` as shown below.
 
 ## Safest test: separate instance on Worleyserver
 
@@ -8,7 +8,7 @@ These commands create another checkout, containers, and database on port **3081*
 
 ```sh
 cd ~/apps
-git clone --branch codex/shared-todos https://github.com/Chobey1/family-calendar.git family-calendar-test
+git clone --branch main https://github.com/Chobey1/family-calendar.git family-calendar-test
 cd family-calendar-test
 cp ../family-calendar/.env .env
 chmod 600 .env
@@ -52,6 +52,6 @@ docker compose -p hearth-todo-test down
 
 Tasks belong to the family, not the selected calendar date range. Completed tasks stay stored until deleted. Existing child profiles can be tagged without logins. All approved adults have task access; pending join requests do not.
 
-The database migration only adds a table/index; existing calendar data remains intact. Returning the code to main leaves the To-Do table stored but unused. The separate-instance method above avoids changing the live database in the first place.
+The database migration only adds a table/index; existing calendar data remains intact. Main now includes the To-Do feature. Running an older version leaves the To-Do table stored but unused. The separate-instance method above avoids changing the live database in the first place.
 
 Automated tests cover task validation, shared completion/restoration, version conflicts, family isolation, task filtering/sorting, and separation from the calendar. Actual phone/desktop layout should also be checked in the test instance.
