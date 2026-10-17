@@ -33,3 +33,5 @@ CREATE TABLE IF NOT EXISTS todos (
   created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS todos_family ON todos(family_id) WHERE deleted=false;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS import_key text;
+CREATE UNIQUE INDEX IF NOT EXISTS events_import_identity ON events(family_id,import_key);

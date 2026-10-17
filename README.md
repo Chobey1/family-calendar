@@ -25,6 +25,7 @@ Phone-friendly shared calendars for adult accounts and child profiles. Self-host
 - Preview mode saves email content inside Family & settings; SMTP mode sends through SMTP2GO.
 - Styled HTML reminders/digests include an illustrated header, family name, details, calendar/maps buttons, and a plain-text fallback. Subject example: `Example Family – Soccer practice in 15 minutes`.
 - Revocable private read-only ICS feed, including all-day events. Expanded occurrences cover one month back and twelve months ahead.
+- Import .ics invitations/exports with a preview, event selection, family tagging, and optional reminders (off by default). Reimported invitation identifiers are skipped per family, including previously deleted imports. This is a copy, not an RSVP or ongoing sync; edits/cancellations must be handled in Hearth. Files are limited to 256 KB / 100 events. One-time events and simple daily/weekly/yearly series are supported; complex rules, recurrence exceptions, and unsupported zones are flagged and not imported. Floating times use the calendar's time zone; missing timed ends default to one hour with a warning. Organizer/attendee RSVP status, attachments, and source alarms are not imported or acted upon.
 
 ## Connect SMTP2GO
 

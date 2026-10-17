@@ -7,6 +7,7 @@ import { db as defaultDb, initialize, familyData as loadFamilyData } from './lib
 import { zone, token, digest, passwordHash, passwordMatches, validateEvent, occurrences, calendarFeed } from './lib/calendar.mjs';
 import { familyCode, familyName, createFamily, requestJoin, reviewJoin } from './lib/families.mjs';
 import { validateTodo } from './lib/todos.mjs';
+import { parseInvitation } from './lib/ics-import.mjs';
 
 export async function createApplication(db=defaultDb) {
 await initialize(db);
@@ -28,9 +29,10 @@ function send(res, status, value, headers={}) {
   res.writeHead(status, {'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store', ...headers});
   res.end(JSON.stringify(value));
 }
-async function body(req) {
+async function body(req,maxBytes=64000) {
+  req.setEncoding('utf8');
   let text = '';
-  for await (const chunk of req) {text += chunk; if (Buffer.byteLength(text) > 64000) throw Object.assign(new Error('Request too large.'), {status:413});}
+  for await (const chunk of req) {text += chunk; if (Buffer.byteLength(text) > maxBytes) throw Object.assign(new Error('Request too large.'), {status:413});}
   try {return JSON.parse(text || '{}');} catch {throw Object.assign(new Error('Invalid request.'), {status:400});}
 }
 async function user(req) {
@@ -53,6 +55,7 @@ files.set('/time-fields.js',['public/time-fields.js','text/javascript']);
 files.set('/milestone-fields.js',['public/milestone-fields.js','text/javascript']);
 files.set('/todos.js',['public/todos.js','text/javascript']);
 files.set('/todos.css',['public/todos.css','text/css']);
+files.set('/ics-import.js',['public/ics-import.js','text/javascript']);
 files.set('/hearth-landscape.svg',['public/hearth-landscape.svg','image/svg+xml']);
 const server = http.createServer(async (req,res) => {
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -161,6 +164,29 @@ const server = http.createServer(async (req,res) => {
     }
     // All remaining APIs require approved adult membership. Pending applicants cannot read calendar, members, email, or settings.
     if(!account.family_id || account.kind!=='adult') return send(res,403,{error:'Join or create a family first. Joining requires adult approval.'});
+    if(req.method==='POST' && ['/api/import/preview','/api/import/save'].includes(path)) {
+      const input=await body(req,1100000);
+      const entries=parseInvitation(input.text);
+      if(path.endsWith('/preview')) {
+        const keys=entries.filter(e=>e.key).map(e=>e.key);
+        const existing=(await db.query('SELECT import_key FROM events WHERE family_id=$1 AND import_key=ANY($2::text[])',[account.family_id,keys])).rows;
+        const imported=new Set(existing.map(e=>e.import_key));
+        return send(res,200,{entries:entries.map(e=>({...e,duplicate:imported.has(e.key)})),zone});
+      }
+      if(!Array.isArray(input.selected) || !input.selected.length || input.selected.some(i=>!Number.isInteger(i) || i<0 || i>=entries.length))throw new Error('Select at least one supported event.');
+      const members=(await familyData(account.family_id)).members;
+      const chosen=[...new Set(input.selected)].map(index=>entries[index]);
+      if(chosen.some(e=>e.error))throw new Error('An unsupported event was selected. Review the preview again.');
+      const data=chosen.map(e=>({...e,data:validateEvent({...e.data,members:input.members,reminder:input.reminder})}));
+      if(!Array.isArray(input.members) || !input.members.every(id=>members.some(m=>m.id===id)))throw new Error('Choose members of your family.');
+      const client=await db.connect();let added=0;
+      try {
+        await client.query('BEGIN');
+        for(const entry of data){const saved=await client.query('INSERT INTO events (id,family_id,data,import_key) VALUES ($1,$2,$3,$4) ON CONFLICT (family_id,import_key) DO NOTHING RETURNING id',[randomUUID(),account.family_id,entry.data,entry.key]);added+=saved.rowCount;}
+        await client.query('COMMIT');
+      }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
+      return send(res,201,{added,skipped:data.length-added});
+    }
     if(req.method==='GET' && path==='/api/todos') {
       const result=await db.query('SELECT * FROM todos WHERE family_id=$1 AND deleted=false',[account.family_id]);
       return send(res,200,{todos:result.rows});

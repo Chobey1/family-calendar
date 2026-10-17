@@ -1,6 +1,7 @@
 import { configureTimeFields } from './time-fields.js';
 import { configureMilestones } from './milestone-fields.js';
 import { configureTodos } from './todos.js';
+import { configureInvitationImport } from './ics-import.js';
 const $=selector=>document.querySelector(selector);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Keep scrolling in an explicitly bounded inner panel rather than on the modal.
@@ -12,6 +13,7 @@ for (const dialog of document.querySelectorAll('dialog')) {
 }
 let state={members:[],events:[]},selected=null,view='agenda',anchor=new Date(),noticeTimer,registrationSetup=false;
 const todos = configureTodos({api,notify,escapeHtml:esc,tone,today:()=>isoDay(new Date())});
+configureInvitationImport({api,notify,escapeHtml:esc,getState:()=>state,reload:load});
 const syncTimeFields = configureTimeFields($('#event-form'));
 const milestoneFields = configureMilestones($('#event-form'),syncTimeFields,()=>isoDay(new Date()));
 const seriesNotice = document.createElement('p');

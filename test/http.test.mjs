@@ -41,6 +41,15 @@ test('HTTP registration, approval, family isolation, and authenticated styled pr
     assert.equal((await call('family/name',{name:'Worley Family'},applicant.cookie)).status,200);
     await call('members',{name:'Child'},applicant.cookie);
     const memberData=(await call('data',null,first.cookie)).data;
+    const invitation=['BEGIN:VCALENDAR','VERSION:2.0','METHOD:REQUEST','BEGIN:VEVENT','UID:import-test@example.invalid','SUMMARY:Imported meeting','DTSTART:20261020T150000Z','DTEND:20261020T160000Z','END:VEVENT','END:VCALENDAR'].join('\r\n');
+    const preview=await call('import/preview',{text:invitation},first.cookie);assert.equal(preview.status,200);assert.equal(preview.data.entries[0].duplicate,false);
+    const importBody={text:invitation,selected:[0],members:[original.account.id],reminder:0};
+    assert.equal((await call('import/save',{...importBody,members:['outsider']},first.cookie)).status,400);
+    const imported=await call('import/save',importBody,first.cookie);assert.equal(imported.data.added,1);
+    assert.equal((await call('import/save',importBody,first.cookie)).data.skipped,1);
+    assert.equal((await call('import/preview',{text:invitation},first.cookie)).data.entries[0].duplicate,true);
+    assert.equal((await call('import/preview',{text:invitation},outsider.cookie)).data.entries[0].duplicate,false);
+    const importedEvents=(await call('data?from=2026-10-19&to=2026-10-26',null,first.cookie)).data.events.filter(e=>e.data.title==='Imported meeting');assert.equal(importedEvents.length,1);
     assert.equal((await call('members/name',{id:original.account.id,name:'Wrong family'},outsider.cookie)).status,404);
     assert.equal((await call('members/name',{id:original.account.id,name:'  '},first.cookie)).status,400);
     assert.equal((await call('members/name',{id:original.account.id,name:' Colby '},first.cookie)).status,200);
